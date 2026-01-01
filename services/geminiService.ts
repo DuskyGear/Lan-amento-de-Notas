@@ -1,9 +1,5 @@
 
 import { Supplier, Product } from "../types";
-import { GoogleGenAI, Type } from "@google/genai";
-
-// Inicialização da IA com a chave fornecida pelo ambiente
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 export class GeminiService {
   async lookupCnpj(cnpj: string): Promise<Partial<Supplier>> {
@@ -34,63 +30,34 @@ export class GeminiService {
   }
 
   async simulateInvoiceProducts(supplierName: string, supplierActivity: string): Promise<{products: Partial<Product>[], quantities: number[], prices: number[]}> {
-    // Utiliza o Gemini para gerar uma lista de produtos verossímil baseada no nome e atividade da empresa
-    // Isso simula a leitura do XML da NFe quando não temos certificado digital
+    // Simulação local (Mock) para substituir a chamada à IA
+    // Isso garante que o fluxo funcione para demonstração sem dependências externas complexas
     
-    try {
-      const response = await ai.models.generateContent({
-        model: 'gemini-3-flash-preview',
-        contents: `Gere uma lista simulada de 3 a 5 produtos que constariam em uma nota fiscal de um fornecedor chamado "${supplierName}" (Atividade provável: ${supplierActivity}). 
-        Para cada item, forneça um nome comercial realista, uma unidade de medida comum (UN, KG, LT, CX), uma quantidade típica e um preço unitário realista em Reais.`,
-        config: {
-          responseMimeType: "application/json",
-          responseSchema: {
-            type: Type.OBJECT,
-            properties: {
-              items: {
-                type: Type.ARRAY,
-                items: {
-                  type: Type.OBJECT,
-                  properties: {
-                    name: { type: Type.STRING, description: "Nome comercial do produto" },
-                    unit: { type: Type.STRING, description: "Sigla da unidade (UN, KG, LT)" },
-                    quantity: { type: Type.NUMBER, description: "Quantidade comprada" },
-                    price: { type: Type.NUMBER, description: "Preço unitário em reais" }
-                  }
-                }
-              }
-            }
-          }
-        }
+    // Simula um pequeno atraso de rede
+    await new Promise(resolve => setTimeout(resolve, 1500));
+
+    const mockProducts = [
+        { name: `Produto Padrão A - ${supplierName}`, unit: 'UN', price: 150.00, qty: 10 },
+        { name: `Material de Consumo B`, unit: 'CX', price: 89.90, qty: 5 },
+        { name: `Serviço ou Insumo C`, unit: 'UN', price: 45.50, qty: 20 },
+        { name: `Item Especializado D`, unit: 'KG', price: 12.00, qty: 100 }
+    ];
+
+    const products: Partial<Product>[] = [];
+    const quantities: number[] = [];
+    const prices: number[] = [];
+
+    mockProducts.forEach((item) => {
+      products.push({
+        id: crypto.randomUUID(),
+        name: item.name,
+        unit: item.unit
       });
+      quantities.push(item.qty);
+      prices.push(item.price);
+    });
 
-      const result = JSON.parse(response.text || '{ "items": [] }');
-      
-      const products: Partial<Product>[] = [];
-      const quantities: number[] = [];
-      const prices: number[] = [];
-
-      result.items.forEach((item: any) => {
-        products.push({
-          id: crypto.randomUUID(), // ID temporário
-          name: item.name,
-          unit: item.unit
-        });
-        quantities.push(item.quantity);
-        prices.push(item.price);
-      });
-
-      return { products, quantities, prices };
-
-    } catch (error) {
-      console.error("Gemini simulation failed:", error);
-      // Fallback simples caso a IA falhe
-      return {
-        products: [{ name: "Produto Diverso", unit: "UN" }],
-        quantities: [1],
-        prices: [100.00]
-      };
-    }
+    return { products, quantities, prices };
   }
 }
 
