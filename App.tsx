@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Order, Supplier, Product, AppState, Branch } from './types';
-import { geminiService } from './services/geminiService';
+import { cnpjService } from './services/geminiService';
 import { createClient } from '@supabase/supabase-js';
 import { 
   XAxis, 
@@ -564,7 +564,7 @@ export default function App() {
     const cleanDoc = form.doc.replace(/\D/g, '');
     if (form.docType === 'CNPJ' && cleanDoc.length === 14) {
       setIsSearchingCnpj(true);
-      const data = await geminiService.lookupCnpj(cleanDoc);
+      const data = await cnpjService.lookupCnpj(cleanDoc);
       if (data) {
         if (type === 'branch') setBranchForm(prev => ({ ...prev, name: data.name || '', tradeName: data.tradeName || '' }));
         else setSupplierForm(prev => ({ ...prev, name: data.name || '', tradeName: data.tradeName || '' }));

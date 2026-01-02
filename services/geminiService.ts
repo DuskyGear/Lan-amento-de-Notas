@@ -1,10 +1,7 @@
 
-import { Supplier, Product } from "../types";
-import { GoogleGenAI, Type } from "@google/genai";
+import { Supplier } from "../types";
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-
-export class GeminiService {
+export class CnpjService {
   /**
    * Consulta CNPJ via BrasilAPI. 
    * Retorna os dados ou null se o serviço estiver indisponível/não encontrado.
@@ -36,44 +33,6 @@ export class GeminiService {
       return null;
     }
   }
-
-  async simulateInvoiceProducts(supplierName: string, supplierActivity: string): Promise<{products: Partial<Product>[], quantities: number[], prices: number[]}> {
-    try {
-      const response = await ai.models.generateContent({
-        model: 'gemini-3-flash-preview',
-        contents: `Gere uma lista de 4 produtos reais para a empresa "${supplierName}". Responda apenas o JSON.`,
-        config: {
-          responseMimeType: "application/json",
-          responseSchema: {
-            type: Type.OBJECT,
-            properties: {
-              items: {
-                type: Type.ARRAY,
-                items: {
-                  type: Type.OBJECT,
-                  properties: {
-                    name: { type: Type.STRING },
-                    unit: { type: Type.STRING },
-                    quantity: { type: Type.NUMBER },
-                    price: { type: Type.NUMBER }
-                  }
-                }
-              }
-            }
-          }
-        }
-      });
-
-      const result = JSON.parse(response.text || '{ "items": [] }');
-      return {
-        products: result.items.map((i: any) => ({ name: i.name, unit: i.unit })),
-        quantities: result.items.map((i: any) => i.quantity),
-        prices: result.items.map((i: any) => i.price)
-      };
-    } catch {
-      return { products: [{ name: "Item Genérico", unit: "UN" }], quantities: [1], prices: [10.0] };
-    }
-  }
 }
 
-export const geminiService = new GeminiService();
+export const cnpjService = new CnpjService();
