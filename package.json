@@ -1,3 +1,4 @@
+
 {
   "name": "nfe-manager-pro",
   "private": true,
@@ -13,7 +14,7 @@
     "react-dom": "^18.3.1",
     "recharts": "^2.12.7",
     "papaparse": "^5.4.1",
-    "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.1/package/xlsx-0.20.1.tgz"
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@types/node": "^20.12.7",
