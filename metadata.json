@@ -1,5 +1,5 @@
 {
-  "name": "NFe Manager Pro",
+  "name": "Cotify",
   "description": "Uma aplicação avançada para gestão de Notas Fiscais Eletrônicas (NFe). Permite a extração inteligente de dados através da chave de acesso, cadastrando automaticamente fornecedores e produtos em uma base de dados local simulada.",
   "requestFramePermissions": []
 }

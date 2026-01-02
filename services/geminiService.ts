@@ -1,16 +1,24 @@
 
 import { Supplier, Product } from "../types";
+import { GoogleGenAI, Type } from "@google/genai";
+
+const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 export class GeminiService {
-  async lookupCnpj(cnpj: string): Promise<Partial<Supplier>> {
+  /**
+   * Consulta CNPJ via BrasilAPI. 
+   * Retorna os dados ou null se o serviço estiver indisponível/não encontrado.
+   */
+  async lookupCnpj(cnpj: string): Promise<Partial<Supplier> | null> {
     const cleanCnpj = cnpj.replace(/\D/g, '');
     
+    if (cleanCnpj.length !== 14) return null;
+
     try {
       const response = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${cleanCnpj}`);
       
       if (!response.ok) {
-        if (response.status === 404) throw new Error("CNPJ não encontrado.");
-        throw new Error("Erro ao consultar BrasilAPI.");
+        return null; // Silencioso: Se a API falhar, o chamador usa os dados locais/manuais
       }
 
       const data = await response.json();
@@ -19,45 +27,52 @@ export class GeminiService {
         name: data.razao_social,
         tradeName: data.nome_fantasia || data.razao_social,
         cnpj: data.cnpj,
-        address: `${data.logradouro}${data.numero ? ', ' + data.numero : ''}${data.complemento ? ' - ' + data.complemento : ''}${data.bairro ? ' (' + data.bairro + ')' : ''}`,
+        address: `${data.logradouro}${data.numero ? ', ' + data.numero : ''}`,
         city: data.municipio,
         state: data.uf
       };
     } catch (error) {
-      console.error("BrasilAPI lookup failed:", error);
-      throw error;
+      // Falha de rede ou DNS: retorna null sem erro no console
+      return null;
     }
   }
 
   async simulateInvoiceProducts(supplierName: string, supplierActivity: string): Promise<{products: Partial<Product>[], quantities: number[], prices: number[]}> {
-    // Simulação local (Mock) para substituir a chamada à IA
-    // Isso garante que o fluxo funcione para demonstração sem dependências externas complexas
-    
-    // Simula um pequeno atraso de rede
-    await new Promise(resolve => setTimeout(resolve, 1500));
-
-    const mockProducts = [
-        { name: `Produto Padrão A - ${supplierName}`, unit: 'UN', price: 150.00, qty: 10 },
-        { name: `Material de Consumo B`, unit: 'CX', price: 89.90, qty: 5 },
-        { name: `Serviço ou Insumo C`, unit: 'UN', price: 45.50, qty: 20 },
-        { name: `Item Especializado D`, unit: 'KG', price: 12.00, qty: 100 }
-    ];
-
-    const products: Partial<Product>[] = [];
-    const quantities: number[] = [];
-    const prices: number[] = [];
-
-    mockProducts.forEach((item) => {
-      products.push({
-        id: crypto.randomUUID(),
-        name: item.name,
-        unit: item.unit
+    try {
+      const response = await ai.models.generateContent({
+        model: 'gemini-3-flash-preview',
+        contents: `Gere uma lista de 4 produtos reais para a empresa "${supplierName}". Responda apenas o JSON.`,
+        config: {
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: Type.OBJECT,
+            properties: {
+              items: {
+                type: Type.ARRAY,
+                items: {
+                  type: Type.OBJECT,
+                  properties: {
+                    name: { type: Type.STRING },
+                    unit: { type: Type.STRING },
+                    quantity: { type: Type.NUMBER },
+                    price: { type: Type.NUMBER }
+                  }
+                }
+              }
+            }
+          }
+        }
       });
-      quantities.push(item.qty);
-      prices.push(item.price);
-    });
 
-    return { products, quantities, prices };
+      const result = JSON.parse(response.text || '{ "items": [] }');
+      return {
+        products: result.items.map((i: any) => ({ name: i.name, unit: i.unit })),
+        quantities: result.items.map((i: any) => i.quantity),
+        prices: result.items.map((i: any) => i.price)
+      };
+    } catch {
+      return { products: [{ name: "Item Genérico", unit: "UN" }], quantities: [1], prices: [10.0] };
+    }
   }
 }
 
